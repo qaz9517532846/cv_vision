@@ -1,0 +1,9 @@
+int64   command
+---
+int64   num
+float64 robot_x
+float64 robot_y
+float64 robot_z
+float64 rotation_x
+float64 rotation_y
+float64 rotation_z
