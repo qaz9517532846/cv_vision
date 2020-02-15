@@ -312,7 +312,7 @@ bool robot_connect_vision(cv_vision::robot2vision::Request  &req,
   ROS_INFO("recieved_command = %ld", (long int)req.command);
 
   image_transport::ImageTransport it(cam_server.nh);
-  image_transport::Subscriber sub = it.subscribe("/camera/image_raw", 10, image_call);
+  image_transport::Subscriber sub = it.subscribe("/ueye_cam/image_raw", 10, image_call);
 
   ros::Rate loop_rate(1);
   for(int i = 0; i < 3; i++)
@@ -359,9 +359,9 @@ int main(int argc, char **argv)
   while(ros::ok)
   {
      ros::spinOnce();
-     feedback.x = 1;
-     feedback.y = 0;
-     feedback.theta = 0;
+     feedback.x = arm_x;
+     feedback.y = arm_y;
+     feedback.theta = arm_ry;
      feed_pose.publish(feedback);
      ROS_INFO("Publishing");
      loop_rate.sleep();
