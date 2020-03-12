@@ -25,32 +25,32 @@ Localization2 using OpenCV with Subscriber image.
 $ rosrun cv_vision vision_localization2
 ```
 
-Object 2D detection using OpenCV and ros topic with robot arm.
+lego object 2D detection using OpenCV and ros topic with robot arm.
 
 ``` bash
 $ rosrun cv_vision vision_detect
 ```
 
 
-Object 3D detection using OpenCV and ros topic with robot arm.
+lego object 3D detection using OpenCV and ros topic with robot arm.
 
 ``` bash
 $ rosrun cv_vision vision_detect_3d
 ```
 
-Object 2D detection using OpenCV and ros service with robot arm.
+lego object 2D detection using OpenCV and ros service with robot arm.
 
 ``` bash
 $ rosrun cv_vision vision_server
 ```
 
-Object 2D detection using OpenCV and ros service with robot arm.
+lego object 2D detection using OpenCV and ros service with robot arm.
 
 ``` bash
 $ rosrun cv_vision vision_server_1
 ```
 
-Object 2D detection using OpenCV and ros service with robot arm and agv.
+lego object 2D detection using OpenCV and ros service with robot arm and agv.
 
 ``` bash
 $ rosrun cv_vision vision_server_2
