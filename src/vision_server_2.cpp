@@ -12,6 +12,7 @@
 
 cv::Mat cameraMatrix, distCoeffs;
 cv::Mat img_h, img_s, img_v, imghsv;
+cv::Mat img_gray;
 cv::Mat threshold_out;
 cv::Mat ROI, src_img_ROI;
 
@@ -47,13 +48,13 @@ void first_Localization(cv::Mat src_img)
    img_s.convertTo(img_s, CV_8U);
    img_v.convertTo(img_v, CV_8U);
 	
-   cv::medianBlur(img_h, img_h, 71); //median filter 71 x 71
+   cv::medianBlur(img_h, img_h, 31); //median filter 71 x 71
 
    //imshow("Hue", img_h);
    //namedWindow("threshold", CV_WINDOW_FREERATIO); // create namedwindows "threshold"
    //namedWindow("result", CV_WINDOW_FREERATIO);  // create namedwindows "result"
 
-   cv::threshold(img_v, threshold_out, 124, 255, cv::THRESH_BINARY_INV); // gray to binary, thresholding = 124
+   cv::threshold(img_h, threshold_out, 80, 255, cv::THRESH_BINARY_INV); // gray to binary, thresholding = 124
 
    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(91, 91), cv::Point(-1, -1));
    cv::morphologyEx(threshold_out, threshold_out, CV_MOP_CLOSE, kernel);
@@ -117,17 +118,17 @@ void first_Localization(cv::Mat src_img)
     std::vector<cv::Point3d> corner_pts_3d(4);
     if ((theta - theta_1) < -80 || (theta - theta_1) > 80)
     {
-       corner_pts_3d[0] = (cv::Point3d(double(-8.5), float(7), 0));
-       corner_pts_3d[1] = (cv::Point3d(double(-8.5), float(-7), 0));
-       corner_pts_3d[2] = (cv::Point3d(double(8.5), float(-7), 0));
-       corner_pts_3d[3] = (cv::Point3d(double(8.5), float(7), 0));
+       corner_pts_3d[0] = (cv::Point3d(double(-0.06), float(0.035), 0));
+       corner_pts_3d[1] = (cv::Point3d(double(-0.06), float(-0.035), 0));
+       corner_pts_3d[2] = (cv::Point3d(double(0.06), float(-0.035), 0));
+       corner_pts_3d[3] = (cv::Point3d(double(0.06), float(0.035), 0));
     }
     else
     {
-       corner_pts_3d[0] = (cv::Point3d(double(8.5), float(7), 0));
-       corner_pts_3d[1] = (cv::Point3d(double(-8.5), float(7), 0));
-       corner_pts_3d[2] = (cv::Point3d(double(-8.5), float(-7), 0));
-       corner_pts_3d[3] = (cv::Point3d(double(8.5), float(-7), 0));
+       corner_pts_3d[0] = (cv::Point3d(double(0.06), float(0.035), 0));
+       corner_pts_3d[1] = (cv::Point3d(double(-0.06), float(0.035), 0));
+       corner_pts_3d[2] = (cv::Point3d(double(-0.06), float(-0.035), 0));
+       corner_pts_3d[3] = (cv::Point3d(double(0.06), float(-0.035), 0));
     }
 
     fs["camera_matrix"] >> cameraMatrix;
@@ -146,30 +147,80 @@ void first_Localization(cv::Mat src_img)
 
 void second_Localization(cv::Mat src_img)
 {
-    cv::Mat src_temp = src_img.clone();
-    std::vector<cv::Mat> hsv_vec;
-    cvtColor(src_img, imghsv, CV_BGR2HSV);
+    for (int i = 0; i < 7; i++)
+    {
+	for (int j = 0; j < 5; j++)
+	{
+	    line_position[i][j] = 0;
+	}
+    }
 
-    split(imghsv, hsv_vec);
-    img_h = hsv_vec[0];
-    img_s = hsv_vec[1];
-    img_v = hsv_vec[2];
-    img_h.convertTo(img_h, CV_8U);
-    img_s.convertTo(img_s, CV_8U);
-    img_v.convertTo(img_v, CV_8U);
+    std::vector<cv::Mat> bgr_vec;
+    cv::Mat img_b, img_g, img_r;
+    split(src_img, bgr_vec);
+    img_b = bgr_vec[0];
+    img_g = bgr_vec[1];
+    img_r = bgr_vec[2];
 
-    imshow("Hue", img_v);
-    cv::Mat temp = img_v.clone();
+    cv::threshold(img_b, img_b, 90, 255, cv::THRESH_BINARY);
+    cv::threshold(img_g, img_g, 100, 255, cv::THRESH_BINARY);
+    cv::threshold(img_r, img_r, 90, 255, cv::THRESH_BINARY);
 
-    //namedWindow("threshold", CV_WINDOW_FREERATIO); // create namedwindows "threshold"
-    //namedWindow("result", CV_WINDOW_FREERATIO);  // create namedwindows "result"
+    std::vector<cv::Mat> imgDsc_merge;
 
-    cv::threshold(img_v, threshold_out, 123, 255, cv::THRESH_BINARY_INV); // gray to binary, thresholding = 124
+    for (int i = 0; i < 3; i++)
+    {
+	if (i == 0)
+	{
+	   imgDsc_merge.push_back(img_b);
+	}
 
-    cv::imshow("threshold", threshold_out);
+	if (i == 1)
+	{
+	   imgDsc_merge.push_back(img_g);
+	}
+
+	if (i == 2)
+	{
+	    imgDsc_merge.push_back(img_r);
+	}
+    }
+
+    cv::Mat th_src_img;
+    cv::merge(imgDsc_merge, th_src_img);
+    //cv::imshow("color_thre", th_src_img);
+
+    cv::Mat th_gray_img, threshold_out;
+    cv::cvtColor(th_src_img, th_gray_img, CV_BGR2GRAY);
+    cv::threshold(th_gray_img, threshold_out, 100, 255, cv::THRESH_BINARY);
+
+    cv::Mat threshold_erode;
+    cv::Mat kerne1 = getStructuringElement(cv::MORPH_RECT, cv::Size(25, 25), cv::Point(-1, -1));
+    cv::erode(threshold_out, threshold_erode, kerne1);
+
+    cv::Mat threshold_dilate;
+    cv::Mat kerne2 = getStructuringElement(cv::MORPH_RECT, cv::Size(125, 125), cv::Point(-1, -1));
+    cv::dilate(threshold_erode, threshold_dilate, kerne2);
+
+    cv::Mat threshold_and;
+    cv::bitwise_and(threshold_out, threshold_dilate, threshold_and);
+    //cv::imshow("result_1", threshold_and);
+
+    cv::Mat threshold_erode_1;
+    cv::Mat kerne3 = getStructuringElement(cv::MORPH_RECT, cv::Size(25, 25), cv::Point(-1, -1));
+    cv::erode(threshold_and, threshold_erode_1, kerne3);
+
+
+    cv::Mat threshold_dilate_1;
+    cv::Mat kerne4 = getStructuringElement(cv::MORPH_RECT, cv::Size(125, 125), cv::Point(-1, -1));
+    cv::dilate(threshold_erode_1, threshold_dilate_1, kerne4);
+
+    cv::Mat threshold_and_1;
+    cv::bitwise_and(threshold_and, threshold_dilate_1, threshold_and_1);
+    //cv::imshow("result_2", threshold_and_1);
 
     std::vector<std::vector<cv::Point> > contours;
-    cv::findContours(threshold_out, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE); // findcontours
+    cv::findContours(threshold_and_1, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE); // findcontours
 
     double max_area = 0;
     int max_area_contour = -1;
@@ -189,11 +240,8 @@ void second_Localization(cv::Mat src_img)
 
        if (area > 1000)
        {
-          std::cout << "area = " << area << std::endl;
-
 	  mu[i] = cv::moments(contours[i], false);
 	  mc[i] = cv::Point2f(mu[i].m10 / mu[i].m00, mu[i].m01 / mu[i].m00);
-	  std::cout << "center = " << mc[i] << std::endl;
 	  obj_data[num][0] = area;
 
 	  minRect[i] = cv::minAreaRect(cv::Mat(contours[i])); // search object min area
@@ -201,8 +249,6 @@ void second_Localization(cv::Mat src_img)
 
 	  for (int j = 0; j < 4; j++)
 	  {
-	      cv::line(src_img, rect_points[j], rect_points[(j + 1) % 4], cv::Scalar(0, 255, 0), 2, 5);
-	      std::cout << "Point" << rect_points[j] << std::endl;
 	      corner_position[j][0] = rect_points[j].x;
 	      corner_position[j][1] = rect_points[j].y;
 	  }
@@ -220,7 +266,7 @@ void second_Localization(cv::Mat src_img)
     }
 
     ////////// 泡沫排序法 尋找最小面積 /////////
-    for (int j = 3; j > 1; j--)
+    for (int j = 7; j > 1; j--)
     {
         for (int i = 0; i < j - 1; i++)
 	{
@@ -234,33 +280,47 @@ void second_Localization(cv::Mat src_img)
 	}
     }
 
-    std::cout << obj_data[0][0] << std::endl;
+    int a = 0;
+    for (int i = 0; i < 7; i++)
+    {
+        float w = pow((obj_data[a][1] - obj_data[a][3]), 2)  + pow((obj_data[a][2] - obj_data[a][4]), 2);
+        float h = pow((obj_data[a][3] - obj_data[a][5]), 2)  + pow((obj_data[a][4] - obj_data[a][6]), 2);
 
-    theta_1 = atan((float)(obj_data[0][2] - obj_data[0][4]) / (obj_data[0][1] - obj_data[1][3])) * 180 / 3.1415;
-    std::cout << theta_1 << std::endl;
+	if (obj_data[i][0] != 0 & w/h < 2 & w/h > 0.5)
+	{
+	   break;
+	}
+	a++;
+    }
+    std::cout << obj_data[a][0] << std::endl;
+
+    cv::line(src_img, cv::Point(obj_data[a][1], obj_data[a][2]), cv::Point(obj_data[a][3], obj_data[a][4]), cv::Scalar(0, 255, 0), 2, 5);
+    cv::line(src_img, cv::Point(obj_data[a][3], obj_data[a][4]), cv::Point(obj_data[a][5], obj_data[a][6]), cv::Scalar(0, 255, 0), 2, 5);
+    cv::line(src_img, cv::Point(obj_data[a][5], obj_data[a][6]), cv::Point(obj_data[a][7], obj_data[a][8]), cv::Scalar(0, 255, 0), 2, 5);
+    cv::line(src_img, cv::Point(obj_data[a][7], obj_data[a][8]), cv::Point(obj_data[a][1], obj_data[a][2]), cv::Scalar(0, 255, 0), 2, 5);
+
+    theta_1 = atan((float)(obj_data[a][2] - obj_data[a][4]) / (obj_data[a][1] - obj_data[a][3])) * 180 / 3.1415;
 
     std::vector<cv::Point2f> obj_corner_pts(4);
-    obj_corner_pts[0] = cvPoint(obj_data[0][1], obj_data[0][2]);
-    obj_corner_pts[1] = cvPoint(obj_data[0][3], obj_data[0][4]);
-    obj_corner_pts[2] = cvPoint(obj_data[0][5], obj_data[0][6]);
-    obj_corner_pts[3] = cvPoint(obj_data[0][7], obj_data[0][8]);
-
-    std::cout << obj_corner_pts << std::endl;
+    obj_corner_pts[0] = cvPoint(obj_data[a][1], obj_data[a][2]);
+    obj_corner_pts[1] = cvPoint(obj_data[a][3], obj_data[a][4]);
+    obj_corner_pts[2] = cvPoint(obj_data[a][5], obj_data[a][6]);
+    obj_corner_pts[3] = cvPoint(obj_data[a][7], obj_data[a][8]);
 
     std::vector<cv::Point3d> corner_pts_3d(4);
-    if ((theta - theta_1) < -80 || (theta - theta_1) > 80)
+    if ((theta - theta_1) < -30 || (theta - theta_1) > 30)
     {
-       corner_pts_3d[0] = (cv::Point3d(double(-8.5), float(7), 0));
-       corner_pts_3d[1] = (cv::Point3d(double(-8.5), float(-7), 0));
-       corner_pts_3d[2] = (cv::Point3d(double(8.5), float(-7), 0));
-       corner_pts_3d[3] = (cv::Point3d(double(8.5), float(7), 0));
+       corner_pts_3d[0] = (cv::Point3d(double(0.007), float(0.0085), 0));
+       corner_pts_3d[1] = (cv::Point3d(double(-0.007), float(0.0085), 0));
+       corner_pts_3d[2] = (cv::Point3d(double(-0.007), float(-0.0085), 0));
+       corner_pts_3d[3] = (cv::Point3d(double(0.007), float(-0.0085), 0));
     }
     else
     {
-       corner_pts_3d[0] = (cv::Point3d(double(8.5), float(7), 0));
-       corner_pts_3d[1] = (cv::Point3d(double(-8.5), float(7), 0));
-       corner_pts_3d[2] = (cv::Point3d(double(-8.5), float(-7), 0));
-       corner_pts_3d[3] = (cv::Point3d(double(8.5), float(-7), 0));
+       corner_pts_3d[0] = (cv::Point3d(double(0.0085), float(0.007), 0));
+       corner_pts_3d[1] = (cv::Point3d(double(-0.0085), float(0.007), 0));
+       corner_pts_3d[2] = (cv::Point3d(double(-0.0085), float(-0.007), 0));
+       corner_pts_3d[3] = (cv::Point3d(double(0.0085), float(-0.007), 0));
     }
 
     fs["camera_matrix"] >> cameraMatrix;
@@ -272,12 +332,15 @@ void second_Localization(cv::Mat src_img)
     double x = translation.at<double>(0, 0); double y = translation.at<double>(1, 0); double z = translation.at<double>(2, 0);
     double rx = rotation.at<double>(0, 0); double ry = rotation.at<double>(1, 0); double rz = rotation.at<double>(2, 0);    
 
-    arm_x = 0.26 + z + 0.02*cos(ry)*sin(rx) - 0.1*cos(ry)*cos(rx);
-    arm_y = -x + 0.02*(sin(rz)*cos(rx) - cos(rz)*sin(ry)*sin(rx)) + 0.1*(sin(rz)*sin(rx) + cos(rz)*sin(ry)*cos(rx));
-    arm_z = 0.3505 - y - 0.02*(cos(rz)*cos(rx) + sin(rz)*sin(ry)*sin(rx)) - 0.1*(cos(rz)*sin(rx) - sin(rz)*sin(ry)*cos(rx));
-    arm_rx = atan((-sin(rz)*cos(ry))/(-sin(rz)*sin(rx)-cos(rz)*cos(ry)*cos(rz)));
+    arm_x = 0.26 + z - 0.02*cos(ry)*sin(rx) - 0.1*cos(ry)*cos(rx);
+    arm_y = -x - 0.02*(sin(rz)*cos(rx) - cos(rz)*sin(ry)*sin(rx)) + 0.1*(sin(rz)*sin(rx) + cos(rz)*sin(ry)*cos(rx));
+    arm_z = 0.2505 - y + 0.02*(cos(rz)*cos(rx) + sin(rz)*sin(ry)*sin(rx)) - 0.1*(cos(rz)*sin(rx) - sin(rz)*sin(ry)*cos(rx));
+    arm_rx = atan((sin(rz)*cos(ry))/(cos(rz)*cos(rx)+sin(rz)*sin(ry)*sin(rz)));
     arm_ry = asin(-cos(rz)*sin(rx) + sin(rz)*sin(ry)*cos(rx));
     arm_rz = atan((-sin(rz)*sin(rx)-cos(rz)*sin(ry)*cos(rz))/(-cos(rz)*cos(rx)));
+
+    ROS_INFO("robot_x = %f, robot_y = %f, robot_z = %f", arm_x, arm_y, arm_z);
+    ROS_INFO("robot_rx = %f, robot_ry = %f, robot_rz = %f", arm_rx, arm_ry, arm_rz);
 }
 
 void image_call(const sensor_msgs::ImageConstPtr& msg)
