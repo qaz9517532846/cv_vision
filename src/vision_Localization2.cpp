@@ -16,7 +16,7 @@ cv_bridge::CvImagePtr cv_ptr;
 
 int robot_command;
 int corner_position[4][2];
-int obj_data[3][9];
+int obj_data[20][9];
 int obj_roi[2][4];
 
 double line_position[7][5];
@@ -28,11 +28,11 @@ cv::FileStorage fs("/home/scl/sclagv_ws/src/cv_vision/src/camera_para.yaml", cv:
 
 void second_Localization(cv::Mat src_img)
 {
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 20; i++)
     {
-	for (int j = 0; j < 5; j++)
+	for (int j = 0; j < 9; j++)
 	{
-	    line_position[i][j] = 0;
+	    obj_data[i][j] = 0;
 	}
     }
 
@@ -100,6 +100,7 @@ void second_Localization(cv::Mat src_img)
     cv::bitwise_and(threshold_and, threshold_dilate_1, threshold_and_1);
     cv::imshow("result_2", threshold_and_1);
 
+    
     std::vector<std::vector<cv::Point> > contours;
     cv::findContours(threshold_and_1, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE); // findcontours
 
@@ -146,8 +147,11 @@ void second_Localization(cv::Mat src_img)
       }
     }
 
+    //std::cout << num << std::endl;
+
+
     ////////// 泡沫排序法 尋找最小面積 /////////
-    for (int j = 7; j > 1; j--)
+    for (int j = 20; j > 1; j--)
     {
         for (int i = 0; i < j - 1; i++)
 	{
@@ -162,7 +166,7 @@ void second_Localization(cv::Mat src_img)
     }
 
     int a = 0;
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 20; i++)
     {
         float w = pow((obj_data[a][1] - obj_data[a][3]), 2)  + pow((obj_data[a][2] - obj_data[a][4]), 2);
         float h = pow((obj_data[a][3] - obj_data[a][5]), 2)  + pow((obj_data[a][4] - obj_data[a][6]), 2);
@@ -173,7 +177,7 @@ void second_Localization(cv::Mat src_img)
 	}
 	a++;
     }
-    //std::cout << obj_data[a][0] << std::endl;
+    std::cout << obj_data[a][0] << std::endl;
 
     cv::line(src_img, cv::Point(obj_data[a][1], obj_data[a][2]), cv::Point(obj_data[a][3], obj_data[a][4]), cv::Scalar(0, 255, 0), 2, 5);
     cv::line(src_img, cv::Point(obj_data[a][3], obj_data[a][4]), cv::Point(obj_data[a][5], obj_data[a][6]), cv::Scalar(0, 255, 0), 2, 5);
@@ -220,8 +224,8 @@ void second_Localization(cv::Mat src_img)
     arm_ry = asin(-cos(rz)*sin(rx) + sin(rz)*sin(ry)*cos(rx));
     arm_rz = atan((-sin(rz)*sin(rx)-cos(rz)*sin(ry)*cos(rz))/(-cos(rz)*cos(rx)));
 
-    char translation_x[20], translation_y[20], translation_z[20];
-    char rotation_x[20], rotation_y[20], rotation_z[20];
+    char translation_x[100], translation_y[100], translation_z[100];
+    char rotation_x[100], rotation_y[100], rotation_z[100];
 
     sprintf(translation_x, "vision_x = %.3f ", x);
     sprintf(translation_y, "vision_y = %.3f ", y);
@@ -239,8 +243,8 @@ void second_Localization(cv::Mat src_img)
     putText(src_img, rotation_y, cv::Point(300, 60), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
     putText(src_img, rotation_z, cv::Point(300, 90), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
 
-    char robot_x[20], robot_y[20], robot_z[20];
-    char robot_rx[20], robot_ry[20], robot_rz[20];
+    char robot_x[100], robot_y[100], robot_z[100];
+    char robot_rx[100], robot_ry[100], robot_rz[100];
 
     sprintf(robot_x, "robot_x = %.3f ", arm_x);
     sprintf(robot_y, "robot_y = %.3f ", arm_y);

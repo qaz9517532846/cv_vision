@@ -20,7 +20,7 @@ cv_bridge::CvImagePtr cv_ptr;
 
 int robot_command;
 int corner_position[4][2];
-int obj_data[3][9];
+int obj_data[20][9];
 int obj_roi[2][4];
 
 double line_position[7][5];
@@ -212,11 +212,11 @@ void first_Localization(cv::Mat src_img)
 
 void second_Localization(cv::Mat src_img)
 {
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 20; i++)
     {
-	for (int j = 0; j < 5; j++)
+	for (int j = 0; j < 9; j++)
 	{
-	    line_position[i][j] = 0;
+	    obj_data[i][j] = 0;
 	}
     }
 
@@ -331,7 +331,7 @@ void second_Localization(cv::Mat src_img)
     }
 
     ////////// 泡沫排序法 尋找最小面積 /////////
-    for (int j = 7; j > 1; j--)
+    for (int j = 20; j > 1; j--)
     {
         for (int i = 0; i < j - 1; i++)
 	{
@@ -346,7 +346,7 @@ void second_Localization(cv::Mat src_img)
     }
 
     int a = 0;
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 20; i++)
     {
         float w = pow((obj_data[a][1] - obj_data[a][3]), 2)  + pow((obj_data[a][2] - obj_data[a][4]), 2);
         float h = pow((obj_data[a][3] - obj_data[a][5]), 2)  + pow((obj_data[a][4] - obj_data[a][6]), 2);
